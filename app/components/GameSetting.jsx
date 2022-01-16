@@ -11,7 +11,7 @@ import '../css/game.scss';
 import '../css/layout.scss';
 
 const playersLimit = [];
-for (let i = 5; i <= 10; i++) {
+for (let i = 4; i <= 10; i++) {
     playersLimit.push({
         text: i.toString(),
         value: i
@@ -27,6 +27,10 @@ const optionalCharacterNames = [
 ];
 
 const GAME_RULES = {
+    '4': {
+        good: 2,
+        evil: 2
+    },
     '5': {
         good: 3,
         evil: 2

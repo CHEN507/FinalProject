@@ -5,6 +5,12 @@ const Character = require('./Character');
 const STATUS = require('./Status'); 
 
 const GAME_RULES = {
+    '4': {
+        good: 2,
+        evil: 2,
+        questPlayers: [2, 3, 3, 2, 2]
+    },
+
     '5': {
         good: 3,
         evil: 2,
@@ -75,10 +81,11 @@ class Game {
 
     _createCharacters() {
         let ruleLimit = Object.assign({}, this.gameRule);
-        this.characters.push(new Character('Merlin', true, false));
+        //this.characters.push(new Character('Merlin', true, false));
         this.characters.push(new Character('Assassin', false, false));
-        ruleLimit.good--;
-        ruleLimit.evil--;
+        this.characters.push(new Character('Morgana', false, false));
+        //ruleLimit.good--;
+        ruleLimit.evil=0;
 
         Object.keys(this.optionalCharacters).forEach(characterName => {
             if (characterName === 'Percival') {
@@ -90,10 +97,27 @@ class Game {
                 ruleLimit.evil--;
             }
         });
-
+        if(ruleLimit.good){
+            let RandomCharacters = Math.floor(Math.random()*3)+1;
+            switch(RandomCharacters){
+            case 1:
+                this.characters.push(new Character('young', true));
+                this.characters.push(new Character('Merlin', true));
+                break;
+            case 2:
+                this.characters.push(new Character('young', true));
+                this.characters.push(new Character('board', true));
+                break;
+            case 3:
+                this.characters.push(new Character('Merlin', true)); 
+                this.characters.push(new Character('board', true));
+                break;    
+            }
+        }
+        /*
         for (let i = 0; i < ruleLimit.good; i++) {
             this.characters.push(new Character('Loyal Servant', true, false));
-        }
+        }*/
 
         for (let i = 0; i < ruleLimit.evil; i++) {
             this.characters.push(new Character('Evil Minion', false, false));

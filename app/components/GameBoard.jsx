@@ -50,7 +50,8 @@ export default class GameBoard extends React.Component {
         this.playerCardSelectHandler = this.playerCardSelectHandler.bind(this);
         this.questSelectHandler = this.questSelectHandler.bind(this);
         this.reviewQuest = this.reviewQuest.bind(this);
-        this.assassinate = this.assassinate.bind(this);
+        this.assassinate = this.assassinate.bind(this);//暗殺動作的綁定
+        this.accuse = this.accuse.bind(this);//加上好人指認
         this.giveLady = this.giveLady.bind(this);
         this.claimsGood = this.claimsGood.bind(this);
         this.reviewLadyResult = this.reviewLadyResult.bind(this);
@@ -121,7 +122,7 @@ export default class GameBoard extends React.Component {
             return summaryText;
         }
     }
-
+    //玩遊戲的時候，最上面的那欄主要提示
     getNotice() {
         const currUser = this.getCurrentUser();
 
@@ -187,8 +188,13 @@ export default class GameBoard extends React.Component {
         case 'EvilEnd': {
             return 'Evil has won';
         }
+        //主提示欄顯示的暗殺提示
         case 'Assassinating': {
             return 'Good and evils are revealed and Assassin will choose a character to kill';
+        }
+        //加上好人指認
+        case 'Accusing':{
+            return 'Merlin will choose two characters to accuse'
         }
         case 'Giving lady': {
             if (!currUser.gameInfo.hasLady) {
@@ -535,7 +541,7 @@ export default class GameBoard extends React.Component {
             }
         });
     }
-
+    //刺殺相關的提示與防呆判斷(原版)
     assassinate() {
         const currUser = this.getCurrentUser();
         if (!currUser) {
@@ -573,6 +579,51 @@ export default class GameBoard extends React.Component {
         };
 
         util.putRequest(assassinUri, payLoad).then(res => {
+            const changeRes = res.data;
+            if (changeRes.changeResolved) {
+                util.sendGameChanged();
+            }
+        });
+    }
+    //增加好人指認的提示與防呆判斷(還沒改好)
+    accuse() {
+        const currUser = this.getCurrentUser();
+        if (!currUser) {
+            return;
+        }
+
+        const selectedUsers = this.props.gameInfo.users.reduce((result, currUser) => {
+            if (currUser.gameInfo.selected) {
+                result.push(currUser);
+            }
+            return result;
+        }, []);
+
+        if (selectedUsers.length !== 1) {
+            this.setActionsAlert('Please select two players to accuse');
+            return;
+        }
+
+        const selectedUser = selectedUsers[0];
+        if (selectedUser.id === currUser.id) {
+            this.setActionsAlert('You can not accuse yourself');
+            return;
+        }
+        //不可以指控好陣營的人
+        else if (selectedUser.gameInfo.status !== 'Good') {
+        this.setActionsAlert('You should accuse a good player');
+        return;
+        }
+        //下面部分還沒看懂
+        const accuseUri = `/api/game/${this.props.gameInfo.id}/accuse`;
+
+        const payLoad = {
+            user: {
+                id: selectedUser.id
+            }
+        };
+
+        util.putRequest(accuseUri, payLoad).then(res => {
             const changeRes = res.data;
             if (changeRes.changeResolved) {
                 util.sendGameChanged();
@@ -738,6 +789,7 @@ export default class GameBoard extends React.Component {
         case 'EvilEnd': {
             return 'No actions needed. Evil has won';
         }
+        //對應Status.js的STATUS
         case 'Assassinating': {
             const currRole = currUser.gameInfo.character;
             if (!currRole || currRole.name !== 'Assassin') {
@@ -745,6 +797,16 @@ export default class GameBoard extends React.Component {
             }
             else {
                 return <Button text='Confirm' clickHandler={ this.assassinate } />; 
+            }
+        }
+        //增加好人指認環節
+        case 'Accusing':{
+            const currRole = currUser.gameInfo.character;
+            if (!currRole || currRole.name !== 'Merlin') {
+                return 'No actions needed. Please wait for the Merlin';
+            }
+            else {
+                return <Button text='Confirm' clickHandler={ this.accuse } />; 
             }
         }
         case 'Investigating': {
@@ -788,14 +850,16 @@ export default class GameBoard extends React.Component {
         userObj.gameInfo.selected = !userObj.gameInfo.selected;
         this.props.changeGameHandler(this.props.gameInfo);
     }
-
+    //需要改 但還不知道怎麼改的部分
     questSelectHandler(quest) {
         const currUser = this.getCurrentUser();
         if (
             !currUser ||
             (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating') ||
+            (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating') ||//加加看 不知道是不是這個
             (this.props.gameInfo.status === 'Teaming' && !currUser.gameInfo.leader) ||
             (this.props.gameInfo.status === 'Assassinating' && (currUser && currUser.gameInfo.character.name !== 'Assassin')) ||
+            (this.props.gameInfo.status === 'Accusing' && (currUser && currUser.gameInfo.character.name !== 'Merlin')) ||//加加看 不知道是不是這個
             quest.status === 'Success' ||
             quest.status === 'Failed'
         ) {

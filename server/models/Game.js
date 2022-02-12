@@ -3,6 +3,7 @@ const userService = require('../service/user-service');
 const Quest = require('./Quest');
 const Character = require('./Character');
 const STATUS = require('./Status'); 
+const { ACCUSE, ASSASSIN, VOTING } = require('./Status');//加上好人指認
 
 const GAME_RULES = {
     '4': {
@@ -258,7 +259,7 @@ class Game {
                 this.startQuest();
             }
         }
-        else if (this.status === STATUS.VOTING) {
+        else if (this.status === STATUS.VOTING) {//對派出的隊伍投票(Yes/No)
             let allVoted = true;
 
             this.userIds.forEach(userId => {
@@ -272,7 +273,7 @@ class Game {
                 this.status = STATUS.QUEST_REVIEW;
             }
         }
-        else if (this.status === STATUS.QUEST_GOING) {
+        else if (this.status === STATUS.QUEST_GOING) {//出好壞杯(Success/Fail)
             let allVoted = true;
             let fails = 0;
             let selectedUserNames = [];
@@ -408,33 +409,53 @@ class Game {
         this.users[this.userIds[this.currLeaderIndex]].gameInfo.leader = true;
         this.users[this.userIds[this.currLeaderIndex]].gameInfo.status = STATUS.LEADER;
     }
-
+    //STATUS觸發，ex:STATUS.WAITING狀態
     clearSelections(userStatus) {
-        this.quests.forEach(quest => quest.selected = false);
+        this.quests.forEach(quest => quest.selected = false); //把對Quest(回合)的選擇清零
         this.userIds.forEach(userId => {
             const currUser = this.users[userId];
-            currUser.gameInfo.status = userStatus;
-            currUser.gameInfo.selected = false;
+            currUser.gameInfo.status = userStatus;//使所有玩家的gameInfo.status = 指定的STATUS
+            currUser.gameInfo.selected = false;//把對玩家的選擇清零
         });
     }
 
     endGameOrNextRound() {
         let success = 0;
         let fails = 0;
+        let toAssassin = false; //判斷刺客是否要進行刺殺，待補刺客選擇
 
         this.quests.forEach(quest => {
             if (quest.status === 'Success') success++;
             if (quest.status === 'Failed') fails++;
         });
 
-        if (success === 3) {
+        if (success === 3) {//好人累積三個成功時，刺客必須刺殺
             this.status = STATUS.ASSASSIN;
             this.clearSelections(STATUS.WAITING);
         }
+        /*保留原本的程式碼
         else if (fails === 3) {
             this.status = STATUS.END_EVIL;
             this.clearSelections(STATUS.QUEST_REVIEW);
         }
+        */
+        
+        //壞方累積兩個任務失敗，詢問刺客是否選擇刺殺
+        else if (fails === 2) {
+            //詢問刺客是否選擇刺殺
+
+            if(toAssassin === true){
+                this.status = STATUS.ASSASSIN;
+                this.clearSelections(STATUS.WAITING);
+            }
+        //刺客若選擇不刺殺，則進入好人最後階段
+            else{
+                this.status = STATUS.ACCUSE;
+                this.clearSelections(STATUS.WAITING);
+            }
+
+        }
+
         else {
             if (this.hasLady && this.finishedQuests > 1) {
                 // Start Lady phase
@@ -471,16 +492,60 @@ class Game {
 
         return true;
     }
+    //刺殺動作
+    // assassinate(targetId) {
+    //     const killTarget = this.users[targetId];
+    //     if (!killTarget) {
+    //         return false;
+    //     }
 
-    assassinate(targetId) {
-        const killTarget = this.users[targetId];
-        if (!killTarget) {
+    //     killTarget.gameInfo.character.isAssassinated = true;
+        
+    //     if (killTarget.gameInfo.character.name !== 'Merlin') {
+    //         this.status = STATUS.END_GOOD;
+    //     }
+    //     else {
+    //         this.status = STATUS.END_EVIL;
+    //     }
+
+    //     return true;
+    // }
+    assassinate(targetId1,targetId2) {//target1要指出梅林，target2要指出派西
+        const killTarget1 = this.users[targetId1];
+        const killTarget2 = this.users[targetId2];
+        if (!killTarget1) {
+            return false;
+        }
+        if(!killTarget2){
+            return false;
+        }
+        killTarget1.gameInfo.character.isAssassinated = true;
+        killTarget2.gameInfo.character.isAssassinated = true;
+        if (killTarget1.gameInfo.character.name === 'Merlin'||'Percival' && killTarget1.gameInfo.character.name === 'Percival'||'Merlin') {
+            this.status = STATUS.END_EVIL;
+        }
+        else {
+            this.status = STATUS.END_GOOD;
+        }
+
+        return true;
+    }
+
+    //好人指認的動作
+    accuse(targetId1,targetId2) {
+        const AccuseTarget1 = this.users[targetId1];
+        const AccuseTarget2 = this.users[targetId2];
+        if (!AccuseTarget1) {
+            return false;
+        }
+        if (!AccuseTarget2) {
             return false;
         }
 
-        killTarget.gameInfo.character.isAssassinated = true;
+        AccuseTarget1.gameInfo.character.isAccused = true;
+        AccuseTarget2.gameInfo.character.isAccused = true;
         
-        if (killTarget.gameInfo.character.name !== 'Merlin') {
+        if (AccuseTarget1.gameInfo.character.name === 'Assassin'||'Morgana'&&AccuseTarget2.gameInfo.character.name === 'Assassin'||'Morgana') {
             this.status = STATUS.END_GOOD;
         }
         else {
@@ -583,7 +648,7 @@ class Game {
         return this.userIds.map(userId => this.users[userId]);
     }
 
-    getFilteredUsers(userId) {
+    getFilteredUsers(userId) {//依狀態提示玩家身分
         if (!this.users[userId]) {
             return [];
         }
@@ -609,6 +674,10 @@ class Game {
                 if (userRole.isAssassinated) {
                     userObj.gameInfo.status = `${userRole.name} Killed`;
                 }
+                //加上壞方被指控狀態提示
+                else if(userRole.isAccused){
+                    userObj.gameInfo.status = `${userRole.name} Accused`;
+                }
                 else {
                     userObj.gameInfo.status = userRole.name;
                 }
@@ -622,6 +691,18 @@ class Game {
                     userObj.gameInfo.status = 'Assassin';
                 }
                 else if (!userRole.isGood) {
+                    userObj.gameInfo.status = userRole.name;
+                }
+            }
+            //增加好人指控的STATUS
+            if (this.status === STATUS.ACCUSE) {
+                if (userRole.isGood) {
+                    userObj.gameInfo.status = 'Good';//userObj.gameInfo.status：玩家小方框右邊顯示的狀態
+                }
+                else if (userRole.name === 'Merlin') {
+                    userObj.gameInfo.status = 'Merlin';
+                }
+                else if (!userRole.isGood/*=== true && user !'Merlin'*/) { 
                     userObj.gameInfo.status = userRole.name;
                 }
             }

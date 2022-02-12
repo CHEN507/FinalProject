@@ -6,6 +6,7 @@
     QUEST_REVIEW: 'QuestReview',
     QUEST_GOING: 'QuestGoing',
     ASSASSIN: 'Assassinating',
+    ACCUSE:'Accusing',//加上好人指認
     END_GOOD: 'GoodEnd',
     END_EVIL: 'EvilEnd',
     READY: 'Ready',

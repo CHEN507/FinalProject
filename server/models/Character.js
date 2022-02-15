@@ -3,7 +3,7 @@
         this.name = name;
         this.isGood = isGood;
         this.isAssassinated = false;
-        this.isAccused = false;
+        this.isAccused = 0;
     }
 }
 

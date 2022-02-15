@@ -719,7 +719,7 @@ class Game {
                     userObj.gameInfo.status = userRole.name;
                 }
             }
-            //增加好人指控的STATUS
+            //增加好人指控的狀態提示
             // if (this.status === STATUS.ACCUSE) {
             //     if (userRole.isGood) {
             //         userObj.gameInfo.status = 'Good';

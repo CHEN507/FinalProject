@@ -597,7 +597,7 @@ export default class GameBoard extends React.Component {
     //     });
     // }
 
-   //刺殺相關的提示與防呆判斷(已修改完成)
+   //刺殺相關的提示與防呆判斷(剩下PayLoad待修改)
         assassinate() {
             const currUsers = this.props.gameInfo.users;//房間裡所有的User
             const currUser = this.getCurrentUser();//此時currUser是刺客
@@ -970,16 +970,19 @@ export default class GameBoard extends React.Component {
         }
         }
     }
-    //需要改 但還不知道怎麼改的部分
+    //控制選擇玩家的方形按鈕 會影響按鈕按不按得下去
     playerCardSelectHandler(userObj) {
         const currUser = this.getCurrentUser();
         if (
             !currUser ||
-            (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating' && this.props.gameInfo.status !== 'Giving lady') ||
+            //原本的程式碼(this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating' && this.props.gameInfo.status !== 'Giving lady') ||
+            //status不是Teaming、Assassinating、Accusing、GivingLady就不能按玩家方框按鈕
+            (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating' && this.props.gameInfo.status !== 'Accusing' && this.props.gameInfo.status !== 'Giving lady') ||
             (this.props.gameInfo.status === 'Teaming' && !currUser.gameInfo.leader) ||
             (this.props.gameInfo.status === 'Assassinating' && (currUser && currUser.gameInfo.character.name !== 'Assassin')) ||
-            (this.props.gameInfo.status === 'Giving lady' && (currUser && !currUser.gameInfo.hasLady))//加加看 不知道是不是這個
-            (this.props.gameInfo.status === 'Giving magic' && (currUser && !currUser.gameInfo.hasMagic))
+            (this.props.gameInfo.status === 'Accusing' && (currUser && currUser.gameInfo.character.isGood !== true)) ||//如果是在Accusing的階段，但目前玩家不是好角色就不能點玩家的方形按鈕
+            (this.props.gameInfo.status === 'Giving lady' && (currUser && !currUser.gameInfo.hasLady))
+            //(this.props.gameInfo.status === 'Giving magic' && (currUser && !currUser.gameInfo.hasMagic))//加加看 不知道是不是這個
         ) {
             return;
         }
@@ -988,16 +991,16 @@ export default class GameBoard extends React.Component {
         userObj.gameInfo.selected = !userObj.gameInfo.selected;
         this.props.changeGameHandler(this.props.gameInfo);
     }
-    //需要改 但還不知道怎麼改的部分
+    //控制選擇Quest的圓形按鈕 會影響按鈕按不按得下去
     questSelectHandler(quest) {
         const currUser = this.getCurrentUser();
         if (
             !currUser ||
-            (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating') ||
-            (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Accusing') ||//加加看 不知道是不是這個
+            //原程式碼(this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating') ||
+            (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating' && this.props.gameInfo.status !== 'Accusing')||
             (this.props.gameInfo.status === 'Teaming' && !currUser.gameInfo.leader) ||
             (this.props.gameInfo.status === 'Assassinating' && (currUser && currUser.gameInfo.character.name !== 'Assassin')) ||
-            (this.props.gameInfo.status === 'Accusing' && (currUser && currUser.gameInfo.character.name !== 'Merlin')) ||//加加看 不知道是不是這個
+            (this.props.gameInfo.status === 'Accusing' && (currUser && currUser.gameInfo.character.isGood !== true)) ||//如果是在Accusing的階段，但目前玩家不是好角色就不能點Quest的按鈕
             quest.status === 'Success' ||
             quest.status === 'Failed'
         ) {

@@ -62,6 +62,7 @@ const self = module.exports = {
     getGame: (gameId) => {
         return games[gameId];
     },
+    //抓取Payload的規則在這裡
     getGamePayload: (gameId, userId) => {
         if (!gameId) {
             return {

@@ -39,27 +39,28 @@ export function postRequest(relativeUrl, payload, useToken = true) {
         return res.json();
     });
 }
-//util.putRequest
-export function putRequest(relativeUrl, payload, useToken = true) {
+//util.putRequest 把Request輸出去，送出請求
+//JSX和AJAX的產物
+export function putRequest(relativeUrl, payload, useToken = true) { //payload在這裡
     const token = getToken();
     let options = {
-        method: 'put',
+        method: 'put',//寄信規則
         headers: {
-            'Content-Type': constants.headers.jsonContentType,
+            'Content-Type': constants.headers.jsonContentType,//信封外的內容
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload)//信封內的書信
     };
 
     if (useToken && token !== null) {
         options.headers[constants.auth.apiTokenName] = constants.auth.bearer + token;
     }
-
-    return fetch(relativeUrl, options).then(res => {
-        if (res.status === 401) {
+    //使用windows的fetch API
+    return fetch(relativeUrl, options).then(res => { //發送請求
+        if (res.status === 401) {//缺乏授權
             clearToken();
         }
 
-        return res.json().then(data => (
+        return res.json().then(data => (//拿到的東西輸出成json格式 //then:如果沒辦法送出的話，要怎麼做
             {
                 status: res.status,
                 data: data

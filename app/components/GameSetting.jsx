@@ -17,7 +17,7 @@ for (let i = 4; i <= 10; i++) {
         value: i
     });
 }
-
+//一開始Checkbox中可選擇的角色
 const optionalCharacterNames = [
     'Percival',
     'Mordred',
@@ -65,7 +65,7 @@ export default class GameSetting extends React.Component {
             switchToGameBoardHandler: PropTypes.func
         };
     }
-
+//Checkbox中可選擇的角色的人物好壞(isGood)的指定
     constructor(props) {
         super(props);
         this.state = {
@@ -78,7 +78,7 @@ export default class GameSetting extends React.Component {
                 'Percival': {
                     name: 'Percival',
                     isChecked: false,
-                    isGood: true,
+                    isGood: true,//指定isGood屬性給角色
                     note: 'Note: Either Mordred or Morgana must also be chosen in a game of 5',
                 },
                 'Mordred': {
@@ -242,7 +242,7 @@ export default class GameSetting extends React.Component {
                 }, {}),
                 countDown: self.state.countDown
             };
-
+            
             util.postRequest('/api/game', gameSettings).then(game => {
                 util.sendGameListChanged();
                 util.setGameId(game.id);

@@ -84,7 +84,7 @@ export default class CharacterCard extends React.Component {
         }
 
         let userInfo = [];
-
+//角色可以看到誰的身分
         if (character.name === 'Merlin') {
             userInfo.push('You know evils:');
             this.props.users.forEach(userObj => {

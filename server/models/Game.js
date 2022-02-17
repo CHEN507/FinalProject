@@ -98,6 +98,7 @@ class Game {
                 ruleLimit.evil--;
             }
         });
+        //好人角色三選二(Merlin, young, board)
         if(ruleLimit.good){
             let RandomCharacters = Math.floor(Math.random()*3)+1;
             switch(RandomCharacters){
@@ -206,8 +207,9 @@ class Game {
             selected: false,
             hasLady: false,
             hadLady: false,
-            isFifth: false//,
-            //hasMagic: false
+            isFifth: false,
+            //hasMagic: false //現在有沒有被施魔法
+            hasAccused: false//玩家是否進行過指控壞人的行為
         };
 
         this.userIds.push(userId);
@@ -234,10 +236,10 @@ class Game {
 
         this.changeAllUserStatus(STATUS.WAITING);
         this.changeUserStatus(leaderId, STATUS.LEADER);
-        //this.changeUserStatus(leaderId, STATUS.MAGIC_GIVE);
+        //this.changeUserStatus(leaderId, STATUS.MAGIC_GIVE); 把魔法環節塞進去
         this.setFifthPlayer(true);
     }
-
+    //上面塞不進去的話，用下面這個加上  然後還缺被施魔法的要標示
     changeUserStatus(userId, status) {
         const user = this.users[userId];
         if (!user || !status) {
@@ -410,7 +412,7 @@ class Game {
         this.currLeaderIndex = (this.currLeaderIndex === this.userIds.length - 1) ? 0 : this.currLeaderIndex + 1;
         this.users[this.userIds[this.currLeaderIndex]].gameInfo.leader = true;
         this.users[this.userIds[this.currLeaderIndex]].gameInfo.status = STATUS.LEADER;
-        //this.users[this.userIds[this.currLeaderIndex]].gameInfo.status = STATUS.GIVE MAGIC;
+        //this.users[this.userIds[this.currLeaderIndex]].gameInfo.status = STATUS.GIVE MAGIC; //把魔法環節塞進去
     }
     //STATUS觸發，ex:STATUS.WAITING狀態
     clearSelections(userStatus) {
@@ -432,10 +434,12 @@ class Game {
             if (quest.status === 'Failed') fails++;
         });
 
-        if (success === 1) {//好人累積三個成功時，刺客必須刺殺 //為了Debug需要 先改成1，原本是3
+        //好人累積三個成功時，刺客必須刺殺
+        if (success === 1) {//為Debug方便 先把3改成1
             this.status = STATUS.ASSASSIN;
             this.clearSelections(STATUS.WAITING);
         }
+
         /*保留原本的程式碼
         else if (fails === 3) {
             this.status = STATUS.END_EVIL;
@@ -444,11 +448,11 @@ class Game {
         */
         
         //壞方累積兩個任務失敗，詢問刺客是否選擇刺殺
-        else if (fails === 2) {
+        else if (fails === 1) {//回報寫法給UI/UX!!! 為了Debug先把它從2改成1
         //詢問刺客是否選擇刺殺
             // const currUser = this.users[userId];
             // if(currUser.gameInfo.character.name === 'Assassin'){
-            //     console.log("是否進行刺殺")
+            //     toAssassin = confirm("是否進行刺殺")
             // }
 
         //刺客選擇刺殺，進入刺殺環節
@@ -519,20 +523,21 @@ class Game {
     //     return true;
     // }
 
-    // 刺殺動作(修改中)
-    // target1要指出梅林，target2要指出派西
-    assassinate(targetId1,targetId2) {
-        alert('assassinating')
-        alert(`targetId = ${targetId}`)
-        const killTarget1 = this.users[targetId1];
-        const killTarget2 = this.users[targetId2];
+    // 刺殺動作(已改完)
+    assassinate(targetId) {
+        const killTarget1 = this.users[targetId[0]];
+        const killTarget2 = this.users[targetId[1]];
         if (!killTarget1 || !killTarget2){
             return false;
         }
+
         killTarget1.gameInfo.character.isAssassinated = true;
         killTarget2.gameInfo.character.isAssassinated = true;
-        if (killTarget1.gameInfo.character.name === 'Merlin'||'board'||'young' &&
-            killTarget1.gameInfo.character.name === 'Merlin'||'board'||'young') {
+
+        if (killTarget1.gameInfo.character.isGood && //待修
+            killTarget2.gameInfo.character.isGood &&
+            killTarget1.gameInfo.character.name === 'Merlin'||'board'||'young' && //待修
+            killTarget2.gameInfo.character.name === 'Merlin'||'board'||'young') {
             this.status = STATUS.END_EVIL;
         }
         else {
@@ -542,27 +547,58 @@ class Game {
         return true;
     }
 
-    //好人指認的動作
-    accuse(targetId1,targetId2) {
-        const AccuseTarget1 = this.users[targetId1];
-        const AccuseTarget2 = this.users[targetId2];
-        if (!AccuseTarget1 || !AccuseTarget2) {
-            return false;
+    //好人指認的動作(已改完)
+    accuse(targetId) {
+        // const AccuseTarget1 = this.users[targetId[0]];
+        // const AccuseTarget2 = this.users[targetId[1]];
+        // if (!AccuseTarget1 || !AccuseTarget2) {
+        //     return false;
+
+        // }
+        // AccuseTarget1.gameInfo.character.isAccused++;
+        // AccuseTarget2.gameInfo.character.isAccused++;
+
+    //如果Morgana的isAccused === 2 且 Assassin的isAccused ===2 就進入END_GOOD 其他狀況的話進入END_EVIL
+
+        for (let i = 0; i < this.userIds.length; i++) {
+            const currUser = this.users[this.userIds[i]];
+            if (currUser.gameInfo.character.name === 'Assassin' && currUser.gameInfo.character.isAccused === 2) {
+                if(currUser.gameInfo.character.name === 'Morgana' && currUser.gameInfo.character.isAccused === 2){
+                    this.status = STATUS.END_GOOD;
+                }
+                else{
+                    this.status = STATUS.END_EVIL;
+                }
+            }
+            else{
+                this.status = STATUS.END_EVIL;
+            }
         }
 
-        AccuseTarget1.gameInfo.character.isAccused++;
-        AccuseTarget2.gameInfo.character.isAccused++;
-        
-        if (AccuseTarget1.gameInfo.character.name === 'Morgana' && AccuseTarget1.gameInfo.character.isAccused === 2 && 
+        return true;
+
+    }
+
+/*原程式碼保留
+        if (this.user.gameInfo.character.isAccused === 2 && 
             AccuseTarget2.gameInfo.character.name === 'Assassin' && AccuseTarget2.gameInfo.character.isAccused === 2) {
             this.status = STATUS.END_GOOD;
         }
+
+        else if (AccuseTarget1.gameInfo.character.name === 'Assassin' && AccuseTarget1.gameInfo.character.isAccused === 2 && 
+            AccuseTarget2.gameInfo.character.name === 'Morgana' && AccuseTarget2.gameInfo.character.isAccused === 2) {
+            this.status = STATUS.END_GOOD;
+        }
+
         else {
             this.status = STATUS.END_EVIL;
         }
 
         return true;
+
     }
+*/
+
     //隊長指派人施魔法的動作
     // giveMagic(requesterId, targetId){
     //     const target = this.users[targetId]
@@ -700,8 +736,8 @@ class Game {
                     userObj.gameInfo.status = `${userRole.name} Killed`;
                 }
                 //加上壞方被指控狀態提示
-                else if(userRole.isAccused){
-                    userObj.gameInfo.status = `${userRole.name} Accused`;
+                else if(userRole.isAccused>0){
+                    userObj.gameInfo.status = `${userRole.name} Accused ${userRole.isAccused} time(s)`;
                 }
                 else {
                     userObj.gameInfo.status = userRole.name;
@@ -719,30 +755,32 @@ class Game {
                     userObj.gameInfo.status = userRole.name;
                 }
             }
-            //增加好人指控的狀態提示
-            // if (this.status === STATUS.ACCUSE) {
-            //     if (userRole.isGood) {
-            //         userObj.gameInfo.status = 'Good';
-            //     }
-            //     else if (userRole.name === 'Merlin') {
-            //         userObj.gameInfo.status = 'Merlin';
-            //     }
-            //     else if (!userRole.isGood) { 
-            //         userObj.gameInfo.status = userRole.name;
-            //     }
-            // }
+            // 增加好人指控環節時，各玩家小方框右邊顯示的狀態
+            /*
+            if (this.status === STATUS.ACCUSE) {
+                if (userRole.isGood) {
+                    userObj.gameInfo.status = 'Good';
+                }
+                else if (userRole.name === 'Merlin') {
+                    userObj.gameInfo.status = 'Merlin';
+                }
+                else if (!userRole.isGood) { 
+                    userObj.gameInfo.status = userRole.name;
+                }
+            }
+            */
 
-            //增加隊長指定人施魔法的STATUS
-
-            //if (this.status === STATUS.MAGIC_GIVE) {
-            //     if (!userObj.gameInfo.hasMagic && !userObj.gameInfo.selected) {
-            //    userObj.gameInfo.status = STATUS.WAITING;
-            //     }
-            //     else if (!userRole.isGood) { 
-            //         userObj.gameInfo.status = STATUS;
-            //     }
-            // }
-
+            //增加隊長指定人施魔法的時候，各玩家小方框右邊顯示的狀態
+            /*
+            if (this.status === STATUS.MAGIC_GIVE) {
+                if (!userObj.gameInfo.hasMagic && !userObj.gameInfo.selected) {
+               userObj.gameInfo.status = STATUS.WAITING;
+                }
+                else if (!userRole.isGood) { 
+                    userObj.gameInfo.status = STATUS;
+                }
+            }
+            */
             if (this.status == STATUS.LADY_INVESTIGATING) {
                 if (!userObj.gameInfo.hasLady && !userObj.gameInfo.selected) {
                     userObj.gameInfo.status = STATUS.WAITING;

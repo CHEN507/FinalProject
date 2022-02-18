@@ -6,7 +6,7 @@ const User = require('../models/User');
 
 // Store users in memory for now
 const users = {};
-
+//Token在這裡
 const self = module.exports = {
     verifyToken: (bearerToken) => {
         const authToken = extractBearerToken(bearerToken);

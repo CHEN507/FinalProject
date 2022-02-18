@@ -6,6 +6,7 @@
     QUEST_REVIEW: 'QuestReview',
     QUEST_GOING: 'QuestGoing',
     ASSASSIN: 'Assassinating',
+    TOASSASSIN: 'toAssassinating',//加上刺客決定是否暗殺
     ACCUSE:'Accusing',//加上好人指認
     END_GOOD: 'GoodEnd',
     END_EVIL: 'EvilEnd',

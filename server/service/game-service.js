@@ -180,6 +180,32 @@ const self = module.exports = {
                 return response;
             }
         }
+        //補上Accuese的PayLoad抓取規則
+        case 'accuse': {
+            if (!game.accuse(body.user.id)) {
+                response.status = 400;
+                response.payload.error = 'Error when tring to assassinate';
+                return response;
+            }
+            else {
+                response.status = 200;
+                response.payload.changeResolved = true;
+                return response;
+            }
+        }
+        //補上toAssassinate的PayLoad抓取規則
+        case 'toAssassinate': {
+            if (!game.toAssassinate(body.user.toAssassin)) {
+                response.status = 400;
+                response.payload.error = 'Error when tring to decide to assassinate or not';
+                return response;
+            }
+            else {
+                response.status = 200;
+                response.payload.changeResolved = true;
+                return response;
+            }
+        }
         case 'givelady': {
             if (!game.giveLady(body.requester.id, body.user.id)) {
                 response.status = 400;

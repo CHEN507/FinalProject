@@ -4,7 +4,7 @@ const constants = require('./common/constants');
 const userService = require('./service/user-service');
 const gameService = require('./service/game-service');
 
-/* APIs */
+/* APIs */ //API管理區
 router.post('/api/login', (req, res) => {
     const registerResult = userService.register(req);
     res.status(registerResult.status);

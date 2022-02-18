@@ -1,4 +1,5 @@
 ﻿module.exports = {
+    //auth.apiTokenName和auth.bearer在這裡
     auth: {
         apiTokenName: 'Authorization',
         bearer: 'Bearer'

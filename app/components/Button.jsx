@@ -7,8 +7,8 @@ export default class Button extends React.Component {
         return {
             theme: PropTypes.string,
             text: PropTypes.string,
-            clickHandler: PropTypes.func,
-            isDisabled: PropTypes.bool
+            clickHandler: PropTypes.func, //clickHandler{裡面放函式} 表示按鈕點擊後會執行的動作
+            isDisabled: PropTypes.bool //isDisabled{裡面放布林值} 如果布林值=true 按鈕失效
         };
     }
 

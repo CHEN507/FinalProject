@@ -1,9 +1,9 @@
 ﻿const uuidv4 = require('uuid/v4');
-const userService = require('../service/user-service');
+const userService = require('../service/user-service');//import user-service
 const Quest = require('./Quest');
 const Character = require('./Character');
 const STATUS = require('./Status'); 
-const { ACCUSE, ASSASSIN, VOTING } = require('./Status');//加上好人指認
+const { ACCUSE, ASSASSIN, VOTING, TOASSASSIN } = require('./Status');//加上好人指認 //加上刺客選擇是否刺殺
 
 const GAME_RULES = {
     '4': {
@@ -71,6 +71,8 @@ class Game {
         this.finishedQuests = 0;
         this.history = [];
         this.countDown = gameSetting.countDown || 0;
+        this.toAssassin = false; //設定在Game裡面的toAssassin紀錄 //為了Accuse的Debug 先從null改成false
+        this.hasAccused = 0; //設定在Game裡面的toAssassin紀錄 //為了Accuse的Debug 先從null改成false
     }
 
     _createQuests() {
@@ -209,7 +211,8 @@ class Game {
             hadLady: false,
             isFifth: false,
             //hasMagic: false //現在有沒有被施魔法
-            hasAccused: false//玩家是否進行過指控壞人的行為
+            hasAccused: false,//玩家是否進行過指控壞人的行為
+            toAssassin: null//刺客是否要進行暗殺
         };
 
         this.userIds.push(userId);
@@ -423,11 +426,22 @@ class Game {
             currUser.gameInfo.selected = false;//把對玩家的選擇清零
         });
     }
+    //刺客決定是否暗殺的動作(去接收GameBoard的PayLoad)
+    toAssassinate(toAssassin) {
+
+        if (toAssassin){
+            this.toAssassin = true;
+        }
+        else{
+            this.toAssassin = false;
+        }
+
+        return true;
+    }
 
     endGameOrNextRound() {
         let success = 0;
         let fails = 0;
-        let toAssassin = false; //判斷刺客是否要進行刺殺，待補刺客選擇
 
         this.quests.forEach(quest => {
             if (quest.status === 'Success') success++;
@@ -449,23 +463,21 @@ class Game {
         
         //壞方累積兩個任務失敗，詢問刺客是否選擇刺殺
         else if (fails === 1) {//回報寫法給UI/UX!!! 為了Debug先把它從2改成1
-        //詢問刺客是否選擇刺殺
-            // const currUser = this.users[userId];
-            // if(currUser.gameInfo.character.name === 'Assassin'){
-            //     toAssassin = confirm("是否進行刺殺")
-            // }
+
+        //詢問刺客是否選擇刺殺 補上刺客是否暗殺的STATUS
+        this.status = STATUS.TOASSASSIN;
+        this.clearSelections(STATUS.WAITING);
 
         //刺客選擇刺殺，進入刺殺環節
-            if(toAssassin === true){
+            if(this.toAssassin === true){
                 this.status = STATUS.ASSASSIN;
                 this.clearSelections(STATUS.WAITING);
             }
         //刺客若選擇不刺殺，進入好人指認
-            else{
+            if(this.toAssassin === false){
                 this.status = STATUS.ACCUSE;
                 this.clearSelections(STATUS.WAITING);
             }
-
         }
 
         else {
@@ -504,6 +516,7 @@ class Game {
 
         return true;
     }
+
     // 刺殺動作(原程式碼)
     // assassinate(targetId) {
     //     const killTarget = this.users[targetId];
@@ -549,32 +562,33 @@ class Game {
 
     //好人指認的動作(已改完)
     accuse(targetId) {
-        // const AccuseTarget1 = this.users[targetId[0]];
-        // const AccuseTarget2 = this.users[targetId[1]];
-        // if (!AccuseTarget1 || !AccuseTarget2) {
-        //     return false;
+        const AccuseTarget1 = this.users[targetId[0]];
+        const AccuseTarget2 = this.users[targetId[1]];
+        if (!AccuseTarget1 || !AccuseTarget2) {
+            return false;
 
-        // }
-        // AccuseTarget1.gameInfo.character.isAccused++;
-        // AccuseTarget2.gameInfo.character.isAccused++;
+        }
+        AccuseTarget1.gameInfo.character.isAccused++;
+        AccuseTarget2.gameInfo.character.isAccused++;
 
+    //驗證大家都已經投過票了之後，
     //如果Morgana的isAccused === 2 且 Assassin的isAccused ===2 就進入END_GOOD 其他狀況的話進入END_EVIL
-
-        for (let i = 0; i < this.userIds.length; i++) {
-            const currUser = this.users[this.userIds[i]];
-            if (currUser.gameInfo.character.name === 'Assassin' && currUser.gameInfo.character.isAccused === 2) {
-                if(currUser.gameInfo.character.name === 'Morgana' && currUser.gameInfo.character.isAccused === 2){
-                    this.status = STATUS.END_GOOD;
+        if(hasAccused === 1){
+            for (let i = 0; i < this.userIds.length; i++) {
+                const currUser = this.users[this.userIds[i]];
+                if (currUser.gameInfo.character.name === 'Assassin' && currUser.gameInfo.character.isAccused === 2) {
+                    if(currUser.gameInfo.character.name === 'Morgana' && currUser.gameInfo.character.isAccused === 2){
+                        this.status = STATUS.END_GOOD;
+                    }
+                    else{
+                        this.status = STATUS.END_EVIL;
+                    }
                 }
                 else{
                     this.status = STATUS.END_EVIL;
                 }
             }
-            else{
-                this.status = STATUS.END_EVIL;
-            }
         }
-
         return true;
 
     }

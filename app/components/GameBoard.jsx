@@ -51,6 +51,8 @@ export default class GameBoard extends React.Component {
         this.questSelectHandler = this.questSelectHandler.bind(this);
         this.reviewQuest = this.reviewQuest.bind(this);
         this.assassinate = this.assassinate.bind(this);//暗殺動作的綁定
+        //this.toAssassinate = this.toAssassinate.bind(this); //加上刺客決定是否暗殺的綁定 不可以亂綁定，如果亂綁整個網頁會掛掉
+        //this.disableToAssassinateButton = this.disableToAssassinateButton.bind(this); //加上刺客決定是否暗殺的按鈕失效
         this.accuse = this.accuse.bind(this);//加上好人指認
         this.giveLady = this.giveLady.bind(this);
         //this.giveMagic = this.giveMagic.bind(this);//加上隊長指定人施魔法
@@ -192,6 +194,10 @@ export default class GameBoard extends React.Component {
         //主提示欄顯示的暗殺提示
         case 'Assassinating': {
             return 'Good and evils are revealed and Assassin will choose a character to kill';
+        }
+        //加上刺客是否暗殺提示
+        case 'toAssassinating': {
+            return 'Assassin will decide to assassinate or not';
         }
         //加上好人指認
         case 'Accusing':{
@@ -553,13 +559,47 @@ export default class GameBoard extends React.Component {
         });
     }
 
+    //補上刺客決定是否暗殺按鈕失效
+    /*
+    disableToAssassinateButton(){
+        const currUser = this.getCurrentUser();
+        return currUser && (currUser.gameInfo.toAssassin === true || currUser.gameInfo.toAssassin === false);
+    }
+    */
+
     //如果已經指認過壞人，就使Confirm按鈕失效
     disableAccuseButton(){
-        // const currUser = this.getCurrentUser();
-        // return currUser && currUser.gameInfo.hasAccused;
-        if(this.props.gameInfo.status === 'Accusing' && (currUser && currUser.gameInfo.hasAccused === true)){
-            return true;
+        const currUser = this.getCurrentUser();
+        return currUser && currUser.gameInfo.hasAccused;
+    }
+
+    //補上刺客決定是否要暗殺
+    toAssassinate(toAssassin){
+        const currUser = this.getCurrentUser();
+
+        if (!currUser) {
+        return;
         }
+
+        if(toAssassin){
+            currUser.gameInfo.toAssassin = true;
+        }
+        else{
+            currUser.gameInfo.toAssassin = false;
+        }
+        const toAssassinUri = `/api/game/${this.props.gameInfo.id}/toAssassinate`;
+
+        const payLoad = {
+            user: {
+                toAssassin: currUser.gameInfo.toAssassin
+            }
+        };
+        util.putRequest(toAssassinUri, payLoad).then(res => {
+            const changeRes = res.data;
+            if (changeRes.changeResolved) {
+                util.sendGameChanged();
+            }
+        });
     }
 
     //刺殺相關的提示與防呆判斷(原程式碼)
@@ -607,7 +647,7 @@ export default class GameBoard extends React.Component {
     //     });
     // }
 
-   //刺殺相關的提示與防呆判斷(已改好)
+   //刺殺相關的提示與防呆判斷
         assassinate() {
             const currUsers = this.props.gameInfo.users;//房間裡所有的User
             const currUser = this.getCurrentUser();//此時currUser是刺客
@@ -684,15 +724,9 @@ export default class GameBoard extends React.Component {
                     util.sendGameChanged();
                 }
             });
-
-            //alert(`currUsers = ${currUsers} currUser = ${currUser} selectedUsersStatus = ${selectedUsersStatus} selectedUserIds = ${selectedUserIds}`)
-            alert(`currUsers.gameInfo.character.name = ${currUsers.gameInfo.character.name} currUser = ${currUser.gameInfo.character.name} selectedUsersStatus = ${selectedUsersStatus} selectedUserIds = ${selectedUserIds}`)
-
-            //顯示一下現在狀況(Debug用，實際玩不要開，會無法跳到下個環節)
-            //alert(`currUsers = ${currUsers} currUser = ${currUser} selectedUsersStatus = ${selectedUsersStatus} selectedUserIds = ${selectedUserIds}`)
         }
 
-    //增加好人指認的提示與防呆判斷(還沒改好)
+    //增加好人指認的提示與防呆判斷
     accuse() {
         const currUsers = this.props.gameInfo.users;//房間裡所有的User
         const currUser = this.getCurrentUser();//正在操作的好人本人
@@ -708,32 +742,22 @@ export default class GameBoard extends React.Component {
             return result;
         }, []);
 
-        //防呆判斷_指控的人必須是兩個
+        //將指控過的玩家hasAccused設定為true
+        currUser.gameInfo.hasAccused = true;
+
+        //指控的人必須是兩個
         if (selectedUserIds.length !== 2) {
             this.setActionsAlert('Please select two players to accuse');
-            // currUser.gameInfo.hasAccused = false;
+            currUser.gameInfo.hasAccused = false;
             return;
         }
-        //防呆判斷_好人不能指控自己
+        //好人不能指控自己
         else if (selectedUserIds.includes(currUser.id)) {
             this.setActionsAlert('You can not accuse yourself');
-            // currUser.gameInfo.hasAccused = false;
+            currUser.gameInfo.hasAccused = false;
             return;
         }
-        // else{
-        //     currUser.gameInfo.hasAccused = true;
-        // }
 
-        //將指控過的玩家hasAccused設定為true 放在最下面的時候，可以鎖定玩家方塊
-        currUser.gameInfo.hasAccused = true;
-/*
-        //先移植過來看看
-        currUsers[selectedUserIds[0]].gameInfo.character.isAccused++;
-        currUsers[selectedUserIds[1]].gameInfo.character.isAccused++;
-
-        alert(`被指控數量1 = ${selectedUserIds[0].gameInfo.character.isAccused} 被指控數量2 = ${selectedUserIds[0].gameInfo.character.isAccused}`)
-        //
-*/        
         const accuseUri = `/api/game/${this.props.gameInfo.id}/accuse`;
 
         const payLoad = {
@@ -748,9 +772,6 @@ export default class GameBoard extends React.Component {
                 util.sendGameChanged();
             }
         });
-        //顯示一下現在狀況(Debug用，實際玩不要開，會無法跳到下個環節)
-        //alert(`currUsers = ${currUsers} currUser = ${currUser} selectedUserIds = ${selectedUserIds}`)
-        
     }
 
     //隊長指定人施魔法
@@ -972,6 +993,19 @@ export default class GameBoard extends React.Component {
             }
             else {
                 return <Button text='Confirm' clickHandler={ this.assassinate } />; 
+            }
+        }
+        //增加刺客是否刺殺的按鈕跳出
+        case 'toAssassinating': {
+            const currRole = currUser.gameInfo.character;
+            if (!currRole || currRole.name !== 'Assassin') {
+                return 'No actions needed. Please wait for the Assasin';
+            }
+            else {
+                return   <div className='game-board--actions-button'>
+                <Button text='Yes' theme='positive' clickHandler={ () => this.toAssassinate(true) } /*isDisabled={ this.disableToAssassinate()}*/ />
+                <Button text='No' theme='negative' clickHandler={ () => this.toAssassinate(false) } /*isDisabled={ this.disableToAssassinate()}*/ />
+            </div>;
             }
         }
         //增加好人指認環節

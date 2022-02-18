@@ -39,7 +39,7 @@ export function postRequest(relativeUrl, payload, useToken = true) {
         return res.json();
     });
 }
-//util.putRequest 把Request輸出去，送出請求
+//util.putRequest 把Request輸出去，送出請求(類似於寄信)
 //JSX和AJAX的產物
 export function putRequest(relativeUrl, payload, useToken = true) { //payload在這裡
     const token = getToken();
@@ -101,7 +101,7 @@ export function setToken(token) {
     sessionStorage.setItem(constants.auth.localStoreName, token);
 }
 
-export function getToken() {
+export function getToken() {//是不是getToken中沒找到toAssassin的localStoreName
     const token = sessionStorage.getItem(constants.auth.localStoreName);
     if (!token) {
         return null;

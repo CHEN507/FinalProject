@@ -62,7 +62,7 @@ const self = module.exports = {
     getGame: (gameId) => {
         return games[gameId];
     },
-    //抓取Payload的規則在這裡
+
     getGamePayload: (gameId, userId) => {
         if (!gameId) {
             return {
@@ -104,6 +104,7 @@ const self = module.exports = {
             }
         };
     },
+    //抓取Payload的規則在這裡
     applyChanges: (gameId, action, body) => {
         const game = self.getGame(gameId);
         let response = {
@@ -180,11 +181,11 @@ const self = module.exports = {
                 return response;
             }
         }
-        //補上Accuese的PayLoad抓取規則
+        //補上Accuse的PayLoad抓取規則
         case 'accuse': {
-            if (!game.accuse(body.user.id)) {
+            if (!game.accuse(body.user.id, body.user.goodUserIds)) {
                 response.status = 400;
-                response.payload.error = 'Error when tring to assassinate';
+                response.payload.error = 'Error when tring to accuse';
                 return response;
             }
             else {
@@ -198,6 +199,19 @@ const self = module.exports = {
             if (!game.toAssassinate(body.user.toAssassin)) {
                 response.status = 400;
                 response.payload.error = 'Error when tring to decide to assassinate or not';
+                return response;
+            }
+            else {
+                response.status = 200;
+                response.payload.changeResolved = true;
+                return response;
+            }
+        }
+        //補上隊長指定人施魔法
+        case 'giveMagic': {
+            if (!game.giveMagic(body.requester.id, body.user.id)) {
+                response.status = 400;
+                response.payload.error = 'Error when tring to give magic';
                 return response;
             }
             else {

@@ -23,7 +23,7 @@ export default class GameBoard extends React.Component {
     }
 
     constructor(props) {
-        super(props);
+        super(props);//不確定是不是用來讀取Game.Js內容的...
 
         this.state = {
             alertText: '',
@@ -51,11 +51,11 @@ export default class GameBoard extends React.Component {
         this.questSelectHandler = this.questSelectHandler.bind(this);
         this.reviewQuest = this.reviewQuest.bind(this);
         this.assassinate = this.assassinate.bind(this);//暗殺動作的綁定
-        //this.toAssassinate = this.toAssassinate.bind(this); //加上刺客決定是否暗殺的綁定 不可以亂綁定，如果亂綁整個網頁會掛掉
+        this.toAssassinate = this.toAssassinate.bind(this); //加上刺客決定是否暗殺的綁定 不可以亂綁定，如果亂綁整個網頁會掛掉
         //this.disableToAssassinateButton = this.disableToAssassinateButton.bind(this); //加上刺客決定是否暗殺的按鈕失效
         this.accuse = this.accuse.bind(this);//加上好人指認
         this.giveLady = this.giveLady.bind(this);
-        //this.giveMagic = this.giveMagic.bind(this);//加上隊長指定人施魔法
+        this.giveMagic = this.giveMagic.bind(this);//加上隊長指定人施魔法
         this.claimsGood = this.claimsGood.bind(this);
         this.reviewLadyResult = this.reviewLadyResult.bind(this);
         this.disableLadyReview = this.disableLadyReview.bind(this);
@@ -212,14 +212,14 @@ export default class GameBoard extends React.Component {
             }
         }
         //加上隊長指定人施魔法
-        // case 'Giving magic': {
-        //     if (!currUser.gameInfo.leader) {
-        //         return 'Please select a player to give magic.';
-        //     }
-        //     else {
-        //         return 'Please wait for the Leader giving magic';
-        //     }
-        // }
+        case 'Giving magic': {
+            if (!currUser.gameInfo.leader) {
+                return 'Please wait for the Leader giving magic';
+            }
+            else {
+                return 'Please select a player to give magic.';
+            }
+        }
         case 'Investigating': {
             if (!currUser.gameInfo.hasLady && !currUser.gameInfo.selected) {
                 return 'Please wait for the Lady of lake to investigate the selected player';
@@ -570,13 +570,52 @@ export default class GameBoard extends React.Component {
     //如果已經指認過壞人，就使Confirm按鈕失效
     disableAccuseButton(){
         const currUser = this.getCurrentUser();
-        return currUser && currUser.gameInfo.hasAccused;
+        return currUser && currUser.gameInfo.hasAccused
     }
 
+    /*
+    //貼一下剛剛成功的來參考
+        giveMagic(){
+        const currUser = this.getCurrentUser();
+        if (!currUser) {
+            return;
+        }
+
+        const selectedUsers = this.props.gameInfo.users.reduce((result, currUser) => {
+            if (currUser.gameInfo.selected) {
+                result.push(currUser);
+            }
+            return result;
+        }, []);
+
+        if (selectedUsers.length !== 1) {
+            this.setActionsAlert('Please select one player to give magic');
+            return;
+        }
+        const selectedUser = selectedUsers[0];
+
+        const requestUri = `/api/game/${this.props.gameInfo.id}/giveMagic`;//要和action的名字一樣
+        const payLoad = {
+            user: {
+                id: selectedUser.id
+            },
+            requester: {
+                id: currUser.id
+            }
+        };
+
+        util.putRequest(requestUri, payLoad).then(res => {
+            const changeRes = res.data;
+            if (changeRes.changeResolved) {
+                util.sendGameChanged();
+            }
+        });
+    }
+    */
+   
     //補上刺客決定是否要暗殺
     toAssassinate(toAssassin){
         const currUser = this.getCurrentUser();
-
         if (!currUser) {
         return;
         }
@@ -588,7 +627,6 @@ export default class GameBoard extends React.Component {
             currUser.gameInfo.toAssassin = false;
         }
         const toAssassinUri = `/api/game/${this.props.gameInfo.id}/toAssassinate`;
-
         const payLoad = {
             user: {
                 toAssassin: currUser.gameInfo.toAssassin
@@ -600,7 +638,9 @@ export default class GameBoard extends React.Component {
                 util.sendGameChanged();
             }
         });
+        alert(`toAssassin = ${toAssassin} currUser.gameInfo.toAssassin = ${currUser.gameInfo.toAssassin} payLoad = ${payLoad}`)
     }
+    
 
     //刺殺相關的提示與防呆判斷(原程式碼)
     // assassinate() {
@@ -741,9 +781,16 @@ export default class GameBoard extends React.Component {
             }
             return result;
         }, []);
+        
+        //把好人的Id抓出來丟回game
+        const goodUserIds = currUsers.reduce((result, currUser) => {
+            if (currUser.gameInfo.character.isGood) {
+                result.push(currUser.id);
+            }
+            return result;
+        }, []);
 
-        //將指控過的玩家hasAccused設定為true
-        currUser.gameInfo.hasAccused = true;
+        currUser.gameInfo.hasAccused = true;//將指控過的玩家hasAccused設定為true
 
         //指控的人必須是兩個
         if (selectedUserIds.length !== 2) {
@@ -758,11 +805,14 @@ export default class GameBoard extends React.Component {
             return;
         }
 
+        alert(`currUser.gameInfo.character.name ${currUser.gameInfo.character.name} currUser.gameInfo.character.isGood ${currUser.gameInfo.character.isGood}  currUser.gameInfo.hasAccused${currUser.gameInfo.hasAccused}`)
+        alert(`goodUserIds ${goodUserIds} currUser.id ${currUser.id}`)
         const accuseUri = `/api/game/${this.props.gameInfo.id}/accuse`;
 
         const payLoad = {
             user: {
-                id: selectedUserIds
+                id: selectedUserIds,
+                goodUserIds: goodUserIds
             }
         };
 
@@ -772,10 +822,11 @@ export default class GameBoard extends React.Component {
                 util.sendGameChanged();
             }
         });
+
     }
 
     //隊長指定人施魔法
-    /*giveMagic(){
+    giveMagic(){
         const currUser = this.getCurrentUser();
         if (!currUser) {
             return;
@@ -792,8 +843,9 @@ export default class GameBoard extends React.Component {
             this.setActionsAlert('Please select one player to give magic');
             return;
         }
+        const selectedUser = selectedUsers[0];
 
-        const requestUri = `/api/game/${this.props.gameInfo.id}/givemagic`;//可能待修
+        const requestUri = `/api/game/${this.props.gameInfo.id}/giveMagic`;//要和action的名字一樣
         const payLoad = {
             user: {
                 id: selectedUser.id
@@ -802,13 +854,15 @@ export default class GameBoard extends React.Component {
                 id: currUser.id
             }
         };
+
         util.putRequest(requestUri, payLoad).then(res => {
             const changeRes = res.data;
             if (changeRes.changeResolved) {
                 util.sendGameChanged();
             }
         });
-    }*/
+    }
+
     giveLady() {
         const currUser = this.getCurrentUser();
         if (!currUser) {
@@ -954,7 +1008,6 @@ export default class GameBoard extends React.Component {
             if (!currUser.gameInfo.selected) {
                 return 'No actions needed. Please wait.';
             }
-/*
             //被施魔法的人出不合心意的好壞杯
             //刺客被施魔法 只能出好杯
             //青年被施魔法 只能出壞杯
@@ -969,7 +1022,6 @@ export default class GameBoard extends React.Component {
                 <Button text='Fail' theme='negative' clickHandler={ () => this.successFailQuest(false) } isDisabled={ this.disableSuccessFailButton() } />
                 </div>;
             }
-*/
             else {
                 return  <div className='game-board--actions-button'>
                     <Button text='Success' theme='positive' clickHandler={ () => this.successFailQuest(true) } isDisabled={ this.disableSuccessFailButton() } />
@@ -1015,7 +1067,7 @@ export default class GameBoard extends React.Component {
                 return 'No actions needed. Please wait for Good';
             }
             else {
-                return <Button text='Confirm' clickHandler={ this.accuse } isDisabled={ this.disableAccuseButton() }/>;//如果已經指認過壞人了之後，按鈕失效 
+                return <Button text='Confirm' clickHandler={ ()=> this.accuse() } isDisabled={ this.disableAccuseButton() } />;//如果已經指認過壞人了之後，按鈕失效 
             }
         }
         case 'Investigating': {
@@ -1038,14 +1090,14 @@ export default class GameBoard extends React.Component {
             }
         }
         //增加隊長指派人施魔法環節
-        // case 'Giving magic': {
-        //     if (!currUser.gameInfo.leader) {
-        //         return 'No actions needed. Please wait';
-        //     }
-        //     else {
-        //         return <Button text='Give Magic' clickHandler={ this.giveMagic } />;
-        //     }
-        // }
+        case 'Giving magic': {
+            if (!currUser.gameInfo.leader) {
+                return 'No actions needed. Please wait';
+            }
+            else {
+                return <Button text='Give Magic' clickHandler={ this.giveMagic } />;
+            }
+        }
         default: {
             return;
         }
@@ -1057,14 +1109,14 @@ export default class GameBoard extends React.Component {
         if (
             !currUser ||
             //原本的程式碼(this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating' && this.props.gameInfo.status !== 'Giving lady') ||
-            //status不是Teaming、Assassinating、Accusing、GivingLady就不能按玩家方框按鈕
-            (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating' && this.props.gameInfo.status !== 'Accusing' && this.props.gameInfo.status !== 'Giving lady') ||
+            //status不是Teaming、Assassinating、Accusing、GivingLady、Giving magic就不能按玩家方框按鈕
+            (this.props.gameInfo.status !== 'Teaming' && this.props.gameInfo.status !== 'Assassinating' && this.props.gameInfo.status !== 'Accusing' && this.props.gameInfo.status !== 'Giving lady' && this.props.gameInfo.status !== 'Giving magic') ||
             (this.props.gameInfo.status === 'Teaming' && !currUser.gameInfo.leader) ||
             (this.props.gameInfo.status === 'Assassinating' && (currUser && currUser.gameInfo.character.name !== 'Assassin')) ||
             (this.props.gameInfo.status === 'Accusing' && (currUser && currUser.gameInfo.character.isGood !== true)) ||//如果是在Accusing的階段，但目前玩家不是好角色就不能點玩家的方形按鈕
-            (this.props.gameInfo.status === 'Accusing' && (currUser && currUser.gameInfo.hasAccused === true)) ||//如果是在Accusing的階段，但目前玩家已經指控過了，就不能點玩家的方形按鈕
+            //(this.props.gameInfo.status === 'Accusing' && (currUser && currUser.gameInfo.hasAccused === true)) ||//如果是在Accusing的階段，但目前玩家已經指控過了，就不能點玩家的方形按鈕
             (this.props.gameInfo.status === 'Giving lady' && (currUser && !currUser.gameInfo.hasLady))
-            //||(this.props.gameInfo.status === 'Giving magic' && (currUser && !currUser.gameInfo.leader))//如果是在Giving magic的階段，但目前玩家不是隊長就不能點玩家的方形按鈕
+            ||(this.props.gameInfo.status === 'Giving magic' && (currUser && !currUser.gameInfo.leader))//如果是在Giving magic的階段，但目前玩家不是隊長就不能點玩家的方形按鈕
         ) {
             return;
         }

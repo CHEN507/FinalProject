@@ -18,5 +18,5 @@
     LADY_INVESTIGATING: 'Investigating',
     LADY_INVESTIGATED: 'Investigated',
     LADY_REVIEW: 'LadyReview',
-    //MAGIC_GIVE: 'Giving Magic',//加上隊長指定人施魔法
+    MAGIC_GIVE: 'Giving magic',//加上隊長指定人施魔法
 };

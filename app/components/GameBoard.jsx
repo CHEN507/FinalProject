@@ -782,6 +782,9 @@ export default class GameBoard extends React.Component {
         const payLoad = {
             user: {
                 id: selectedUserIds
+            },
+            currUser:{
+                id: currUser.id
             }
         };
 

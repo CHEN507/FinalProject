@@ -610,7 +610,7 @@ class Game {//下面所有東西都寫在Game的class下面
     }
 
     //好人指認的動作
-    accuse(targetId) {
+    accuse(targetId, currUserId) {
         const AccuseTarget1 = this.users[targetId[0]];
         const AccuseTarget2 = this.users[targetId[1]];
 
@@ -641,6 +641,11 @@ class Game {//下面所有東西都寫在Game的class下面
                     this.status = STATUS.END_EVIL;
                 }
             }
+        }
+
+        const currUser = this.users[currUserId];
+        if(this.hasAccused === 1){
+            currUser.gameInfo.hasAccused = true;
         }
 
         return true;
@@ -788,7 +793,7 @@ class Game {//下面所有東西都寫在Game的class下面
                 }
                 //加上壞方被指控狀態提示
                 else if(userRole.isAccused>0){
-                    userObj.gameInfo.status = `${userRole.name} Accused ${userRole.isAccused} time(s)`;//從這裡改
+                    userObj.gameInfo.status = `${userRole.name} Accused ${userRole.isAccused} time(s)`;
                 }
                 else {
                     userObj.gameInfo.status = userRole.name;
@@ -807,11 +812,14 @@ class Game {//下面所有東西都寫在Game的class下面
                 }
             }
             // 增加好人指控環節時，各玩家小方框右邊顯示的狀態
-            if (this.status === STATUS.ACCUSE) {
-                if (userObj.gameInfo.hasAccused) {
-                    userObj.gameInfo.status = ' ';//幫助辨認
-                }
-            }
+            // if (this.status === STATUS.ACCUSE) {
+            //     if (userObj.gameInfo.hasAccused) {
+            //         userObj.gameInfo.status = 'hasAccused';//幫助辨認
+            //     }
+            //     if (!userObj.gameInfo.hasAccused) {
+            //         userObj.gameInfo.status = 'has not Accused';//幫助辨認
+            //     }
+            // }
             /*
             if (this.status === STATUS.ACCUSE) {
                 if (userRole.isGood) {

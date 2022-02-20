@@ -573,63 +573,42 @@ export default class GameBoard extends React.Component {
         return currUser && currUser.gameInfo.hasAccused
     }
 
-    /*
-    //貼一下剛剛成功的來參考
-        giveMagic(){
-        const currUser = this.getCurrentUser();
-        if (!currUser) {
-            return;
-        }
+    //補上刺客決定是否要暗殺(原程式碼)
+    // toAssassinate(toAssassin){
+    //     const currUser = this.getCurrentUser();
+    //     if (!currUser) {
+    //     return;
+    //     }
 
-        const selectedUsers = this.props.gameInfo.users.reduce((result, currUser) => {
-            if (currUser.gameInfo.selected) {
-                result.push(currUser);
-            }
-            return result;
-        }, []);
+    //     if(toAssassin){
+    //         currUser.gameInfo.toAssassin = true;
+    //     }
+    //     else{
+    //         currUser.gameInfo.toAssassin = false;
+    //     }
+    //     const toAssassinUri = `/api/game/${this.props.gameInfo.id}/toAssassinate`;
+    //     const payLoad = {
+    //         user: {
+    //             toAssassin: currUser.gameInfo.toAssassin
+    //         }
+    //     };
+    //     util.putRequest(toAssassinUri, payLoad).then(res => {
+    //         const changeRes = res.data;
+    //         if (changeRes.changeResolved) {
+    //             util.sendGameChanged();
+    //         }
+    //     });
+    //     alert(`toAssassin = ${toAssassin} currUser.gameInfo.toAssassin = ${currUser.gameInfo.toAssassin} payLoad = ${payLoad}`)
+    // }
 
-        if (selectedUsers.length !== 1) {
-            this.setActionsAlert('Please select one player to give magic');
-            return;
-        }
-        const selectedUser = selectedUsers[0];
+    //方法一：只把按鈕的結果(true/false傳回Game.js) Game.js收到的時候把它的Game.toAssassin變成true/false，就可以觸發Assassinate或Accuse了
+    toAssassinate(decision){
+        const toAssassin = decision;
 
-        const requestUri = `/api/game/${this.props.gameInfo.id}/giveMagic`;//要和action的名字一樣
-        const payLoad = {
-            user: {
-                id: selectedUser.id
-            },
-            requester: {
-                id: currUser.id
-            }
-        };
-
-        util.putRequest(requestUri, payLoad).then(res => {
-            const changeRes = res.data;
-            if (changeRes.changeResolved) {
-                util.sendGameChanged();
-            }
-        });
-    }
-    */
-   
-    //補上刺客決定是否要暗殺
-    toAssassinate(toAssassin){
-        const currUser = this.getCurrentUser();
-        if (!currUser) {
-        return;
-        }
-
-        if(toAssassin){
-            currUser.gameInfo.toAssassin = true;
-        }
-        else{
-            currUser.gameInfo.toAssassin = false;
-        }
         const toAssassinUri = `/api/game/${this.props.gameInfo.id}/toAssassinate`;
         const payLoad = {
             user: {
-                toAssassin: currUser.gameInfo.toAssassin
+                toAssassin: toAssassin
             }
         };
         util.putRequest(toAssassinUri, payLoad).then(res => {
@@ -638,9 +617,8 @@ export default class GameBoard extends React.Component {
                 util.sendGameChanged();
             }
         });
-        alert(`toAssassin = ${toAssassin} currUser.gameInfo.toAssassin = ${currUser.gameInfo.toAssassin} payLoad = ${payLoad}`)
     }
-    
+
 
     //刺殺相關的提示與防呆判斷(原程式碼)
     // assassinate() {
@@ -781,14 +759,6 @@ export default class GameBoard extends React.Component {
             }
             return result;
         }, []);
-        
-        //把好人的Id抓出來丟回game
-        const goodUserIds = currUsers.reduce((result, currUser) => {
-            if (currUser.gameInfo.character.isGood) {
-                result.push(currUser.id);
-            }
-            return result;
-        }, []);
 
         currUser.gameInfo.hasAccused = true;//將指控過的玩家hasAccused設定為true
 
@@ -805,14 +775,13 @@ export default class GameBoard extends React.Component {
             return;
         }
 
-        alert(`currUser.gameInfo.character.name ${currUser.gameInfo.character.name} currUser.gameInfo.character.isGood ${currUser.gameInfo.character.isGood}  currUser.gameInfo.hasAccused${currUser.gameInfo.hasAccused}`)
-        alert(`goodUserIds ${goodUserIds} currUser.id ${currUser.id}`)
+        // alert(`currUser.gameInfo.character.name ${currUser.gameInfo.character.name} currUser.gameInfo.character.isGood ${currUser.gameInfo.character.isGood}  currUser.gameInfo.hasAccused${currUser.gameInfo.hasAccused}`)
+        // alert(`goodUserIds ${goodUserIds} currUser.id ${currUser.id}`)
         const accuseUri = `/api/game/${this.props.gameInfo.id}/accuse`;
 
         const payLoad = {
             user: {
-                id: selectedUserIds,
-                goodUserIds: goodUserIds
+                id: selectedUserIds
             }
         };
 

@@ -72,7 +72,8 @@ class Game {//下面所有東西都寫在Game的class下面
         this.finishedQuests = 0;
         this.history = [];
         this.countDown = gameSetting.countDown || 0;
-        this.toAssassin = null; //設定在Game裡面的toAssassin紀錄 //為了Accuse的Debug 先從null改成false
+        this.toAssassin = false; //設定在Game裡面的toAssassin紀錄 //為了Accuse的Debug 先從null改成false
+        this.hasAccused = 0; //設定在Game裡面的hasAccused 紀錄現在有幾個玩家完成了指認
     }
 
     _createQuests() {
@@ -483,16 +484,9 @@ class Game {//下面所有東西都寫在Game的class下面
 
     //刺客決定是否暗殺的動作(去接收GameBoard的PayLoad)
     toAssassinate(toAssassin) {
-        if (toAssassin){
-            this.toAssassin = true;
-        }
-        else{
-            this.toAssassin = false;
-        }
-        alert(`toAssassin = ${toAssassin} this.toAssassin = ${this.toAssassin}`)
+        this.toAssassin = toAssassin;
         return true;
     }
-    
 
     endGameOrNextRound() {
         let success = 0;
@@ -591,7 +585,7 @@ class Game {//下面所有東西都寫在Game的class下面
     //     return true;
     // }
 
-    // 刺殺動作(已改完)
+    // 刺殺動作(待修)
     assassinate(targetId) {
         const killTarget1 = this.users[targetId[0]];
         const killTarget2 = this.users[targetId[1]];
@@ -616,42 +610,37 @@ class Game {//下面所有東西都寫在Game的class下面
     }
 
     //好人指認的動作
-    accuse(targetId, goodUserIds) {
+    accuse(targetId) {
         const AccuseTarget1 = this.users[targetId[0]];
         const AccuseTarget2 = this.users[targetId[1]];
-        const goodUser1 = this.users[goodUserIds[0]];
-        const goodUser2 = this.users[goodUserIds[1]];
 
-        if (!AccuseTarget1 || !AccuseTarget2 || !goodUser1 || !goodUser2) {
+        if (!AccuseTarget1 || !AccuseTarget2) {
             return false;
         }
 
         AccuseTarget1.gameInfo.character.isAccused++;
         AccuseTarget2.gameInfo.character.isAccused++;
 
+        this.hasAccused++;
+
     //驗證好人都已經投過票了之後，
     //如果Morgana的isAccused === 2 且 Assassin的isAccused ===2 就進入END_GOOD 其他狀況的話進入END_EVIL
-        let allAccused = false;    
-        let trueAccuse = 0;
-        alert(`allAccused ${allAccused} trueAccuse ${trueAccuse}`)
-        if(goodUser1.gameInfo.hasAccused && goodUser2.gameInfo.hasAccused ){
-            allAccused = true;
+    //保留確定可用程式碼
+        if(this.hasAccused === 2){
             for (let i = 0; i < this.userIds.length; i++) {
                 const currUser = this.users[this.userIds[i]];
-                if (currUser.gameInfo.character.name === 'Assassin' && currUser.gameInfo.character.isAccused === 2){
-                    trueAccuse++
+                if (currUser.gameInfo.character.name === 'Assassin' && currUser.gameInfo.character.isAccused === 2) {
+                    if(currUser.gameInfo.character.name === 'Morgana' && currUser.gameInfo.character.isAccused === 2){
+                        this.status = STATUS.END_GOOD;
+                    }
+                    else{
+                        this.status = STATUS.END_EVIL;
+                    }
                 }
-                if (currUser.gameInfo.character.name === 'Morgana' && currUser.gameInfo.character.isAccused === 2){
-                    trueAccuse++
+                else{
+                    this.status = STATUS.END_EVIL;
                 }
             }
-        }
-
-        if(allAccused && trueAccuse === 2){
-            this.status = STATUS.END_GOOD;
-        }
-        else if(allAccused && trueAccuse !== 2){
-        this.status = STATUS.END_EVIL;
         }
 
         return true;
@@ -842,9 +831,10 @@ class Game {//下面所有東西都寫在Game的class下面
                 if (!userObj.gameInfo.leader && !userObj.gameInfo.selected) {
                     userObj.gameInfo.status = STATUS.WAITING;
                 }
-                // else if(userObj.gameInfo.leader) { 
-                //     userObj.gameInfo.status = STATUS.MAGIC_GIVE;
-                // }
+                else if(userObj.gameInfo.leader) { 
+                    // userObj.gameInfo.status = STATUS.MAGIC_GIVE;
+                    userObj.gameInfo.status = 'Leader';
+                }
             }
             
 

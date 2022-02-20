@@ -183,7 +183,7 @@ const self = module.exports = {
         }
         //補上Accuse的PayLoad抓取規則
         case 'accuse': {
-            if (!game.accuse(body.user.id, body.user.goodUserIds)) {
+            if (!game.accuse(body.user.id)) {
                 response.status = 400;
                 response.payload.error = 'Error when tring to accuse';
                 return response;
@@ -207,7 +207,7 @@ const self = module.exports = {
                 return response;
             }
         }
-        //補上隊長指定人施魔法
+        //補上隊長指定人施魔法的PayLoad抓取規則
         case 'giveMagic': {
             if (!game.giveMagic(body.requester.id, body.user.id)) {
                 response.status = 400;
